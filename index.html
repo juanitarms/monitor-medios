@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor de Medios - Gobierno de Corrientes</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#1a1a2e;--card:#16213e;--accent:#0f3460;--highlight:#e94560;
+  --text:#e0e0e0;--text-dim:#8892a4;--border:#1e2d4a;
+  --pos:#4ade80;--neu:#fbbf24;--neg:#ef4444;
+}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;line-height:1.5;min-height:100vh}
+a{color:#60a5fa;text-decoration:none}a:hover{text-decoration:underline}
+
+/* Header */
+.header{background:linear-gradient(135deg,var(--accent),var(--card));padding:1.5rem 2rem;border-bottom:3px solid var(--highlight)}
+.header h1{font-size:1.5rem;font-weight:700;letter-spacing:-.02em}
+.header .sub{color:var(--text-dim);font-size:.85rem;margin-top:.25rem}
+
+/* Layout */
+.container{max-width:1400px;margin:0 auto;padding:1.5rem}
+.grid-4{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+@media(max-width:860px){.grid-2{grid-template-columns:1fr}}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;margin-bottom:1.5rem}
+@media(max-width:960px){.grid-3{grid-template-columns:1fr}}
+
+/* Cards */
+.card{background:var(--card);border-radius:12px;padding:1.25rem 1.5rem;border:1px solid var(--border)}
+.card h2{font-size:1rem;font-weight:600;color:var(--text-dim);margin-bottom:1rem;text-transform:uppercase;letter-spacing:.05em;font-size:.8rem}
+
+/* Stat cards */
+.stat-card{background:var(--card);border-radius:12px;padding:1.25rem;border:1px solid var(--border);text-align:center}
+.stat-card .number{font-size:2rem;font-weight:800;line-height:1.1}
+.stat-card .label{color:var(--text-dim);font-size:.8rem;margin-top:.3rem;text-transform:uppercase;letter-spacing:.04em}
+.stat-card .pct{font-size:.85rem;margin-top:.15rem}
+
+/* Sentiment bars */
+.sent-bar-row{display:flex;align-items:center;gap:.75rem;margin-bottom:.6rem}
+.sent-label{width:75px;font-weight:600;font-size:.85rem;text-align:right}
+.sent-bar-bg{flex:1;height:24px;background:var(--bg);border-radius:6px;overflow:hidden}
+.sent-bar{height:100%;border-radius:6px;transition:width .3s}
+.sent-val{width:110px;font-size:.8rem;color:var(--text-dim);text-align:left}
+
+/* Source bars */
+.source-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem}
+.source-name{width:180px;font-size:.82rem;text-align:right;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.source-bar-bg{flex:1;height:18px;background:var(--bg);border-radius:4px;overflow:hidden}
+.source-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--highlight));border-radius:4px}
+.source-count{width:45px;font-size:.8rem;color:var(--text-dim);text-align:right}
+@media(max-width:600px){.source-name{width:100px;font-size:.75rem}}
+
+/* Topics cloud */
+.topic-cloud{display:flex;flex-wrap:wrap;gap:.5rem;align-items:baseline}
+.topic-tag{background:var(--accent);color:var(--text);padding:.25rem .65rem;border-radius:20px;white-space:nowrap;border:1px solid var(--border)}
+.topic-tag small{color:var(--text-dim);font-size:.7em}
+
+/* Trend bars */
+.trend-container{display:flex;gap:6px;align-items:flex-end;justify-content:center;height:160px;padding-top:10px}
+.trend-col{display:flex;flex-direction:column;align-items:center;gap:2px}
+.trend-bar{width:36px;border-radius:4px 4px 0 0;overflow:hidden;display:flex;flex-direction:column}
+.tb-pos{background:var(--pos)}
+.tb-neu{background:var(--neu)}
+.tb-neg{background:var(--neg)}
+.trend-date{font-size:.65rem;color:var(--text-dim)}
+.trend-num{font-size:.7rem;color:var(--text-dim)}
+@media(max-width:600px){.trend-bar{width:24px}}
+
+/* Table */
+.table-wrap{overflow-x:auto;margin-top:.5rem}
+table{width:100%;border-collapse:collapse;font-size:.82rem}
+th{background:var(--accent);color:var(--text);padding:.65rem .75rem;text-align:left;font-weight:600;font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;position:sticky;top:0}
+td{padding:.6rem .75rem;border-bottom:1px solid var(--border);vertical-align:top}
+tr:hover td{background:rgba(255,255,255,.03)}
+.td-date{white-space:nowrap;color:var(--text-dim);width:90px}
+.td-title{max-width:300px}
+.td-title a{color:#60a5fa}
+.td-source{white-space:nowrap;font-size:.78rem}
+.td-sentiment{white-space:nowrap}
+.td-cat{white-space:nowrap}
+.td-summary{font-size:.78rem;color:var(--text-dim);max-width:350px;line-height:1.4}
+.sentiment-badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:.75rem;font-weight:600}
+.cat-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.7rem;background:var(--accent);color:var(--text);border:1px solid var(--border)}
+.no-data{color:var(--text-dim)}
+
+/* Footer */
+.footer{text-align:center;padding:2rem 1rem;color:var(--text-dim);font-size:.78rem;border-top:1px solid var(--border);margin-top:2rem}
+.footer span{color:var(--highlight)}
+
+/* Section title */
+.section-title{font-size:1.1rem;font-weight:700;margin-bottom:1rem;padding-bottom:.5rem;border-bottom:2px solid var(--highlight);display:inline-block}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Monitor de Medios &mdash; Gobierno de Corrientes</h1>
+  <div class="sub">Reporte generado el 16/03/2026 11:32 &middot; Datos de los &uacute;ltimos 7 d&iacute;as</div>
+</div>
+
+<div class="container">
+
+  <!-- Stats -->
+  <div class="grid-4">
+    <div class="stat-card">
+      <div class="number" style="color:var(--highlight)">312</div>
+      <div class="label">Art&iacute;culos totales</div>
+    </div>
+    <div class="stat-card">
+      <div class="number" style="color:var(--pos)">251</div>
+      <div class="label">Positivos</div>
+      <div class="pct" style="color:var(--pos)">80.4%</div>
+    </div>
+    <div class="stat-card">
+      <div class="number" style="color:var(--neu)">44</div>
+      <div class="label">Neutros</div>
+      <div class="pct" style="color:var(--neu)">14.1%</div>
+    </div>
+    <div class="stat-card">
+      <div class="number" style="color:var(--neg)">17</div>
+      <div class="label">Negativos</div>
+      <div class="pct" style="color:var(--neg)">5.4%</div>
+    </div>
+  </div>
+
+  <!-- Sentiment + Trends + Sources -->
+  <div class="grid-3">
+    <div class="card">
+      <h2>Distribuci&oacute;n de sentimiento</h2>
+      <div class="sent-bar-row">
+      <span class="sent-label" style="color:#4ade80">Positivo</span>
+      <div class="sent-bar-bg"><div class="sent-bar" style="width:80%;background:#4ade80"></div></div>
+      <span class="sent-val">251 (80.4%)</span>
+    </div>
+<div class="sent-bar-row">
+      <span class="sent-label" style="color:#fbbf24">Neutro</span>
+      <div class="sent-bar-bg"><div class="sent-bar" style="width:14%;background:#fbbf24"></div></div>
+      <span class="sent-val">44 (14.1%)</span>
+    </div>
+<div class="sent-bar-row">
+      <span class="sent-label" style="color:#ef4444">Negativo</span>
+      <div class="sent-bar-bg"><div class="sent-bar" style="width:5%;background:#ef4444"></div></div>
+      <span class="sent-val">17 (5.4%)</span>
+    </div>
+    </div>
+    <div class="card">
+      <h2>Tendencia diaria (7 d&iacute;as)</h2>
+      <div class="trend-container">
+        <div class="trend-col">
+      <div class="trend-bar" style="height:69px">
+        <div class="tb-pos" style="height:85%"></div>
+        <div class="tb-neu" style="height:5%"></div>
+        <div class="tb-neg" style="height:10%"></div>
+      </div>
+      <span class="trend-date">03-09</span>
+      <span class="trend-num">40</span>
+    </div>
+<div class="trend-col">
+      <div class="trend-bar" style="height:120px">
+        <div class="tb-pos" style="height:83%"></div>
+        <div class="tb-neu" style="height:16%"></div>
+        <div class="tb-neg" style="height:1%"></div>
+      </div>
+      <span class="trend-date">03-10</span>
+      <span class="trend-num">70</span>
+    </div>
+<div class="trend-col">
+      <div class="trend-bar" style="height:118px">
+        <div class="tb-pos" style="height:84%"></div>
+        <div class="tb-neu" style="height:7%"></div>
+        <div class="tb-neg" style="height:9%"></div>
+      </div>
+      <span class="trend-date">03-11</span>
+      <span class="trend-num">69</span>
+    </div>
+<div class="trend-col">
+      <div class="trend-bar" style="height:91px">
+        <div class="tb-pos" style="height:72%"></div>
+        <div class="tb-neu" style="height:21%"></div>
+        <div class="tb-neg" style="height:7%"></div>
+      </div>
+      <span class="trend-date">03-12</span>
+      <span class="trend-num">53</span>
+    </div>
+<div class="trend-col">
+      <div class="trend-bar" style="height:84px">
+        <div class="tb-pos" style="height:86%"></div>
+        <div class="tb-neu" style="height:10%"></div>
+        <div class="tb-neg" style="height:4%"></div>
+      </div>
+      <span class="trend-date">03-13</span>
+      <span class="trend-num">49</span>
+    </div>
+<div class="trend-col">
+      <div class="trend-bar" style="height:22px">
+        <div class="tb-pos" style="height:54%"></div>
+        <div class="tb-neu" style="height:46%"></div>
+        <div class="tb-neg" style="height:0%"></div>
+      </div>
+      <span class="trend-date">03-14</span>
+      <span class="trend-num">13</span>
+    </div>
+<div class="trend-col">
+      <div class="trend-bar" style="height:12px">
+        <div class="tb-pos" style="height:71%"></div>
+        <div class="tb-neu" style="height:29%"></div>
+        <div class="tb-neg" style="height:0%"></div>
+      </div>
+      <span class="trend-date">03-15</span>
+      <span class="trend-num">7</span>
+    </div>
+<div class="trend-col">
+      <div class="trend-bar" style="height:19px">
+        <div class="tb-pos" style="height:82%"></div>
+        <div class="tb-neu" style="height:18%"></div>
+        <div class="tb-neg" style="height:0%"></div>
+      </div>
+      <span class="trend-date">03-16</span>
+      <span class="trend-num">11</span>
+    </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Principales fuentes</h2>
+      <div class="source-row">
+      <span class="source-name">El Libertador</span>
+      <div class="source-bar-bg"><div class="source-bar" style="width:100%"></div></div>
+      <span class="source-count">25</span>
+    </div>
+<div class="source-row">
+      <span class="source-name">Radio Dos</span>
+      <div class="source-bar-bg"><div class="source-bar" style="width:84%"></div></div>
+      <span class="source-count">21</span>
+    </div>
+<div class="source-row">
+      <span class="source-name">Diario Epoca</span>
+      <div class="source-bar-bg"><div class="source-bar" style="width:80%"></div></div>
+      <span class="source-count">20</span>
+    </div>
+<div class="source-row">
+      <span class="source-name">Radio Sudamericana</span>
+      <div class="source-bar-bg"><div class="source-bar" style="width:72%"></div></div>
+      <span class="source-count">18</span>
+    </div>
+<div class="source-row">
+      <span class="source-name">Corrientes al Día</span>
+      <div class="source-bar-bg"><div class="source-bar" style="width:52%"></div></div>
+      <span class="source-count">13</span>
+    </div>
+<div class="source-row">
+      <span class="source-name">Radio Dos</span>
+      <div class="source-bar-bg"><div class="source-bar" style="width:52%"></div></div>
+      <span class="source-count">13</span>
+    </div>
+<div class="source-row">
+      <span class="source-name">El Libertador</span>
+      <div class="source-bar-bg"><div class="source-bar" style="width:48%"></div></div>
+      <span class="source-count">12</span>
+    </div>
+<div class="source-row">
+      <span class="source-name">El Litoral</span>
+      <div class="source-bar-bg"><div class="source-bar" style="width:48%"></div></div>
+      <span class="source-count">12</span>
+    </div>
+<div class="source-row">
+      <span class="source-name">Diario Epoca</span>
+      <div class="source-bar-bg"><div class="source-bar" style="width:44%"></div></div>
+      <span class="source-count">11</span>
+    </div>
+<div class="source-row">
+      <span class="source-name">LT7</span>
+      <div class="source-bar-bg"><div class="source-bar" style="width:44%"></div></div>
+      <span class="source-count">11</span>
+    </div>
+<div class="source-row">
+      <span class="source-name">Cadena de Radios</span>
+      <div class="source-bar-bg"><div class="source-bar" style="width:40%"></div></div>
+      <span class="source-count">10</span>
+    </div>
+<div class="source-row">
+      <span class="source-name">Corrientes Hoy</span>
+      <div class="source-bar-bg"><div class="source-bar" style="width:36%"></div></div>
+      <span class="source-count">9</span>
+    </div>
+    </div>
+  </div>
+
+  <!-- Topics cloud -->
+  <div class="card" style="margin-bottom:1.5rem">
+    <h2>Temas m&aacute;s mencionados</h2>
+    <div class="topic-cloud">
+      <span class="topic-tag" style="font-size:1.75rem;opacity:1.00">inversiones <small>(37)</small></span>
+<span class="topic-tag" style="font-size:1.21rem;opacity:0.73">amazon <small>(17)</small></span>
+<span class="topic-tag" style="font-size:1.21rem;opacity:0.73">potencial <small>(17)</small></span>
+<span class="topic-tag" style="font-size:1.18rem;opacity:0.72">desarrollo <small>(16)</small></span>
+<span class="topic-tag" style="font-size:1.18rem;opacity:0.72">inversores <small>(16)</small></span>
+<span class="topic-tag" style="font-size:1.18rem;opacity:0.72">milei <small>(16)</small></span>
+<span class="topic-tag" style="font-size:1.16rem;opacity:0.70">gobernadores <small>(15)</small></span>
+<span class="topic-tag" style="font-size:1.07rem;opacity:0.66">internacional <small>(12)</small></span>
+<span class="topic-tag" style="font-size:1.07rem;opacity:0.66">agenda <small>(12)</small></span>
+<span class="topic-tag" style="font-size:1.05rem;opacity:0.65">correntino <small>(11)</small></span>
+<span class="topic-tag" style="font-size:1.05rem;opacity:0.65">eeuu <small>(11)</small></span>
+<span class="topic-tag" style="font-size:1.05rem;opacity:0.65">económico <small>(11)</small></span>
+<span class="topic-tag" style="font-size:1.05rem;opacity:0.65">foro <small>(11)</small></span>
+<span class="topic-tag" style="font-size:1.02rem;opacity:0.64">productivo <small>(10)</small></span>
+<span class="topic-tag" style="font-size:1.02rem;opacity:0.64">jornada <small>(10)</small></span>
+<span class="topic-tag" style="font-size:1.02rem;opacity:0.64">impacto <small>(10)</small></span>
+<span class="topic-tag" style="font-size:1.02rem;opacity:0.64">gasoducto <small>(10)</small></span>
+<span class="topic-tag" style="font-size:0.99rem;opacity:0.62">gira <small>(9)</small></span>
+<span class="topic-tag" style="font-size:0.99rem;opacity:0.62">encuentro <small>(9)</small></span>
+<span class="topic-tag" style="font-size:0.99rem;opacity:0.62">inició <small>(9)</small></span>
+<span class="topic-tag" style="font-size:0.99rem;opacity:0.62">economía <small>(9)</small></span>
+<span class="topic-tag" style="font-size:0.99rem;opacity:0.62">morgan <small>(9)</small></span>
+<span class="topic-tag" style="font-size:0.99rem;opacity:0.62">programa <small>(9)</small></span>
+<span class="topic-tag" style="font-size:0.99rem;opacity:0.62">república <small>(9)</small></span>
+<span class="topic-tag" style="font-size:0.99rem;opacity:0.62">natural <small>(9)</small></span>
+    </div>
+  </div>
+
+  <!-- Articles table -->
+  <div class="card">
+    <h2>&Uacute;ltimos 30 art&iacute;culos</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>T&iacute;tulo</th>
+            <th>Fuente</th>
+            <th>Sentimiento</th>
+            <th>Categor&iacute;a</th>
+            <th>Resumen IA</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+      <td class="td-date">16/03 06:37</td>
+      <td class="td-title"><a href="https://www.radiosudamericana.com/nota/sociedad/341890-Rige-alerta-por-fuertes-tormentas-en-varias-localidades-de-Corrientes.htm" target="_blank" rel="noopener">SERVICIO METEOROLÓGICO NACIONAL: Rige alerta por fuertes tormentas en varias localidades de Corrientes</a></td>
+      <td class="td-source">Radio Sudamericana</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#fbbf2420;color:#fbbf24;border:1px solid #fbbf2440">Neutro</span></td>
+      <td class="td-cat"><span class="cat-badge">Medio Ambiente</span></td>
+      <td class="td-summary">Alerta por tormentas en Corrientes</td>
+    </tr>
+<tr>
+      <td class="td-date">16/03 02:28</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMimwFBVV95cUxQa1dwbmNlazFvWXlJQ2FNbzkzWlFlaHhCTV81alFjT1FsdTZQNy1FaDZEeW5xYy1YNlNxRGt6WUpqR0R6WXN1SE4xMWwxZ3RPOEhVOTdjMFgxOW5Ud0ZlZGdoNFMwcDdQOWJfN2wxU3dWellyanBUZzJabklNZkd2dVdhSTJaamF6MlFnWGJ1VzFMUmRYVm05T2lIaw?oc=5" target="_blank" rel="noopener">&quot;Mujeres Creando&quot;: el arte y la identidad iluminaron el Senado</a></td>
+      <td class="td-source">Diario Epoca</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Cultura</span></td>
+      <td class="td-summary">Exposición de arte en el Senado</td>
+    </tr>
+<tr>
+      <td class="td-date">16/03 00:02</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMiogFBVV95cUxQRTZxbEtCUWJ1eEpmVWkydi1pMTljQ0pDRHhaRVd5SEFKbFJHRXJtTXY2Sm1VLVU1SGhSQ3lIVlBUMHphalVlWEV1ckczSHREbmtndncwN0R2Y2tiSzFzTGsxMmNtenAtaUd0ZERxcktESEh5enpweHlxSmQzWl9DNFRHc2FscDZUMUxIVlBoY3ZTeWxKbmZVd1UzS09lYzhzemc?oc=5" target="_blank" rel="noopener">JP Valdés retoma la agenda local tras su paso por Argentina Week</a></td>
+      <td class="td-source">Diario Epoca</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#fbbf2420;color:#fbbf24;border:1px solid #fbbf2440">Neutro</span></td>
+      <td class="td-cat"><span class="cat-badge">Gobierno</span></td>
+      <td class="td-summary">JP Valdés retoma agenda local</td>
+    </tr>
+<tr>
+      <td class="td-date">16/03 00:02</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMingFBVV95cUxQQ0tfM0F5dXlrZFF2blZtZ3hvM2tvT25VYlZKUG9WRzJScGY2NkI0cTNXclNpd2Y4QnVzWnp1MHRHamFCSGRtQzVQdndJMTFka0hTYzZ3U09lZTNSSDlvckE1NjFfV3FWQ2ZwclcxNGZSdGsyQktOWnNiT1BBdzlib1ZQX2VpMWJ0RmFlNnRDMnoydjRYWUQ5U003QU5MUQ?oc=5" target="_blank" rel="noopener">Gabur: &quot;Corrientes enfrenta mejor que otras la crisis económica&quot;</a></td>
+      <td class="td-source">Diario Epoca</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Economia</span></td>
+      <td class="td-summary">Corrientes enfrenta bien la crisis</td>
+    </tr>
+<tr>
+      <td class="td-date">16/03 00:00</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMi3gFBVV95cUxPVEFSYzMwU0RhT093dC1wRS03aENza3RHUUU3Y2RiYWJtajhvZzd5bzBxZzV2SHhQREI3N2IwTnZxMFBIMjBvbThUeElQNnMxWDRTb2Q4bVZPUHBxUkM3OTIxNXBxQjhPMHk2S2JtV3pMMGx1UmNyWHhPVUc5V0RlQ25UbEZ3ZDhIVUhhT2ZNSHIxVk5tV05aaFFlU3cyNkVDbThSaDUtNDg3STYtMmhpdU5lNXFMN2xFTWUxQWhabzB6eEdSeG9Lb2ItbVFGdlJHTlZ5enJLUVU4V3cxOHfSAd4BQVVfeXFMT1RBUmMzMFNEYU9Pd3QtcEUtN2hDc2t0R1FFN2NkYmFibWo4b2c3eW8wcWc1dkh4UERCNzdiME52cTBQSDIwb204VHhJUDZzMVg0U29kOG1WT1BwcVJDNzkyMTVwcUI4TzB5NktibVd6TDBsdVJjclh4T1VHOVdEZUNuVGxGd2Q4SFVIYU9mTUhyMVZObVdOWmhRZVN3MjZFQ204Umg1LTQ4N0k2LTJoaXVOZTVxTDdsRU1lMUFoWm8wenhHUnhvS29iLW1RRnZSR05WeXpyS1FVOFd3MTh3?oc=5" target="_blank" rel="noopener">El Gobierno de Corrientes y el BanCo lanzaron &quot;Corrientes Sostiene&quot;, un plan para acompañar a familias y empresas</a></td>
+      <td class="td-source">Ambito</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Economia</span></td>
+      <td class="td-summary">Lanzan plan para ayudar a familias y empresas</td>
+    </tr>
+<tr>
+      <td class="td-date">15/03 23:07</td>
+      <td class="td-title"><a href="https://www.nortecorrientes.com/203351-juan-pablo-valdes-pondero-los-beneficios-del-gas-natural-en-corrientes?utm_source=feed&amp;utm_medium=rss&amp;utm_term=rss&amp;utm_campaign=Rss%20Feed" target="_blank" rel="noopener">Juan Pablo Valdés ponderó los beneficios del gas natural en Corrientes</a></td>
+      <td class="td-source">Norte Corrientes</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Economia</span></td>
+      <td class="td-summary">Valdés promueve inversión en gas natural</td>
+    </tr>
+<tr>
+      <td class="td-date">15/03 23:07</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMirgFBVV95cUxNR25pY1pUdFJlYno2ZWRabW9tX2RDeE1oeU5jTEktM1FQMEtORjBYRlVoN3djNnZrRmtWTkowVVhGREprdlZpcVlNNGtDLXdBSTlfZTBXUzRFZGJPNnJpbGJfRnp4cFgyanpSS01XQTFGYUpiVWlHTUxfOTF1M0Z3UHhUN21lMGpOaFZxODZOMllmem5pZ2Q1TjFjam85dlcxb0J4X0hDZXVfVVM4QlE?oc=5" target="_blank" rel="noopener">Juan Pablo Valdés ponderó los beneficios del gas natural en Corrientes</a></td>
+      <td class="td-source">Norte Corrientes</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Economia</span></td>
+      <td class="td-summary">Valdés destaca beneficios del gas natural</td>
+    </tr>
+<tr>
+      <td class="td-date">15/03 22:43</td>
+      <td class="td-title"><a href="https://www.diarioellibertador.com.ar/emilio-lanari-zubiaur-remarco-que-su-gestion-priorizara-el-equilibrio-fiscal/" target="_blank" rel="noopener">Emilio Lanari Zubiaur remarcó que su gestión priorizará el equilibrio fiscal</a></td>
+      <td class="td-source">El Libertador</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Salud</span></td>
+      <td class="td-summary">Ministro de Salud prioriza equilibrio fiscal</td>
+    </tr>
+<tr>
+      <td class="td-date">15/03 22:43</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMitgFBVV95cUxOSE10bjRWZkdSWjhodXNEaEExNlduU25DaGFncUNYd0ZHd3VvSW9nMXFHYmN3NkZlcDdXcXNnbE5QNDU0ZC1yQm53VVdzQk9sQ3kyUnZoZHBFVFgzYjQwQzFmQmFrOHRQeE5zLUp4aFlGWjdwWnFsazZjcVU4VlV0OG9TdjgwMTlLSU96TjJlS0I2bHFranNKUEMxcFhPZm93ZWtGdjNBMC1nMXJVRm9YRlRtdEJXQQ?oc=5" target="_blank" rel="noopener">Emilio Lanari Zubiaur remarcó que su gestión priorizará el equilibrio fiscal</a></td>
+      <td class="td-source">El Libertador</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Economia</span></td>
+      <td class="td-summary">Prioridad al equilibrio fiscal</td>
+    </tr>
+<tr>
+      <td class="td-date">15/03 22:31</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMipwFBVV95cUxPaGRfdFhNWlkybW85Tm9jZXVpSDVZemMwdU1oNk5fRzdLamc3aklBRDlVcmNuUUp1ZkEtNzhtNEc1NU5YMTdKbGM0cFUwdUJEVWZCWWpmMk5QNndIdVpiQ0dUR2JwZ0pKYlo2MFl0S0RydDBTbGJjS1g5d0FFN2tIc3F4S25hWU1jUW1Td1FuM1VWMjJMUFNLMVlYeHZYSm8tSUFEenEzNA?oc=5" target="_blank" rel="noopener">Avanza la inmunización en escuelas y vacunatorios de la provincia</a></td>
+      <td class="td-source">Norte Corrientes</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Salud</span></td>
+      <td class="td-summary">Avanza inmunización en escuelas</td>
+    </tr>
+<tr>
+      <td class="td-date">16/03 08:16</td>
+      <td class="td-title"><a href="https://www.corrienteshoy.com/info-general/juan-pablo-valdes-culmino-su-participacion-en-argentina-week-ponderando-los-beneficios-del-gas-natural-en-corrientes.htm" target="_blank" rel="noopener">Juan Pablo Valdés culminó su participación en Argentina Week ponderando los beneficios del gas natural en Corrientes</a></td>
+      <td class="td-source">Corrientes Hoy</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Economia</span></td>
+      <td class="td-summary">Valdés destaca beneficios del gas natural</td>
+    </tr>
+<tr>
+      <td class="td-date">15/03 11:31</td>
+      <td class="td-title"><a href="https://www.radiodos.com.ar/205495-mariel-gabur-corrientes-es-una-de-las-provincias-que-mejor-esta-batallando-la-situacion-economica?utm_source=feed&amp;utm_medium=rss&amp;utm_term=rss&amp;utm_campaign=Rss%20Feed" target="_blank" rel="noopener">Mariel Gabur: &quot;Corrientes es una de las provincias que mejor está batallando la situación económica&quot;</a></td>
+      <td class="td-source">Radio Dos</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Economia</span></td>
+      <td class="td-summary">Corrientes batalla bien la crisis</td>
+    </tr>
+<tr>
+      <td class="td-date">15/03 11:31</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMizAFBVV95cUxQanVlUXZXSnhlSGtYQ2xCZzYzVTY0YWp2eURFZVRyTUVsdHMySS1KQXFfMmpnSXlweTlqcFZFMmh1OHdQWk93cWlMdFZ6SkJGZXVYVF9JbnVLV2hyM2s2eUdXanBfS29DamZUeGdBOVFQaUMwQzZUMERMZDRTZ0IwV1FQVDZTYXBxZEc3bV9vX0o4bnVGbC0zNnB5eWxCa29WNDZUM2k3ZzZJeXRTblZsSC1oazB4UU1yR1BZS1EzUGhBd0NSRVM4OEpNMHU?oc=5" target="_blank" rel="noopener">Mariel Gabur: &quot;Corrientes es una de las provincias que mejor está batallando la situación económica&quot;</a></td>
+      <td class="td-source">Radio Dos</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Economia</span></td>
+      <td class="td-summary">Corrientes lidera en batalla económica</td>
+    </tr>
+<tr>
+      <td class="td-date">15/03 10:10</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMitgFBVV95cUxPZTQ4LTl2MmMyZ0NXZWRWWGdSdmlpY1p3WklVb1daRHhkVW9VTTVWdXE3c2o1V3ZkVGR2OFhFVU9KQ0ZiTy1mS1RQcUQ3MmhpNVhsdGJVdG1PQ1drOXdKckJVSENfWWY0bk1fdnRVRlVtYkhzNldGZUhtVlBCeHVNSHMwSHFhdDFTVkNvMG5iMkpwdjUzMkppbmhzZ2lQM1JVMUxQNFFfSVI0SjFuVzVFV2QxOERtQQ?oc=5" target="_blank" rel="noopener">Valdés destacó el potencial del gas natural para el desarrollo de Corrientes</a></td>
+      <td class="td-source">El Libertador</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Economia</span></td>
+      <td class="td-summary">Valdés destaca potencial del gas natural</td>
+    </tr>
+<tr>
+      <td class="td-date">15/03 00:08</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMitAFBVV95cUxQdTdxVjlkaGxHLWVqNXdZTUVlQm02RkFDWGRLSzNfcEMtVVh0Z3FWdlprdm9qRmpnVVF1U1gwdGl6ekFRLUtNTTZVOFhxaEY2d1hOMnd0R1BHNmx3bW1HYlphZGIyZzNWZ041YTJrdEdySzFYdS1NSUdnX25JeFMwLTU1Y1o2Y3pIWVNmWVhjSG1ZanQzT0hJQ1JoRTBnOUc2RlctT1JCel9yaEdiMHJKSGtpc2M?oc=5" target="_blank" rel="noopener">La acusación fiscal, un cúmulo probatorio con puntos fuertes y débiles</a></td>
+      <td class="td-source">Norte Corrientes</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#fbbf2420;color:#fbbf24;border:1px solid #fbbf2440">Neutro</span></td>
+      <td class="td-cat"><span class="cat-badge">Justicia</span></td>
+      <td class="td-summary">Análisis de acusación fiscal</td>
+    </tr>
+<tr>
+      <td class="td-date">15/03 00:04</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMi3gFBVV95cUxPdWxZZUp3QktmRVR6dVdRRWlHYkRnRU9BMHdzak93WEZfanNqbGZXck9oUW9hdF9leThpR2Z0djZRTDFRcWwzUGd1SW9penBXZkR0d0Fnd0twRGVkVHptRGJYUzQtZ0h5cF8zRXZJTXJPbndITUtsTE9IM1VVcTZRRklvZVRRa0xRanllTkdsRnE4VTZyaUN5Q2h5c0lqRl80aVIxcVRsRi1TeXQ0SVNYbDFHb1NicnNGTVk4LW5aSklGNTlhM2tZU2JBbkFvYW12UWtLV0ttY2lDelhMVFE?oc=5" target="_blank" rel="noopener">Alerta de seguridad: Corrientes refuerza sus fronteras ante el conflicto en Medio Oriente</a></td>
+      <td class="td-source">MSN</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Seguridad</span></td>
+      <td class="td-summary">Corrientes refuerza fronteras</td>
+    </tr>
+<tr>
+      <td class="td-date">15/03 00:03</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMiqgFBVV95cUxONGk1RGJmV1NvSEhzRXpvN1dlSElPTlBicmRMTHByVUtsZmh4YXJfUkpNdGFaZ1lCdzNHVnpTNmRmNUlZQ0lsRHN2dm5UNG1rUFpRUUF3VW9XbnZ5QWl4T1FsMlBWMmRaclk1NnNTNlFCdUJ4TmYyOUNGbW05Mjg3bzFKNm45STFLdkk4WUY4SDN5VjNULWJlb1NjTmRWWlFSampzZk05cGJqZw?oc=5" target="_blank" rel="noopener">Corrientes profundiza prevención en inicio de la vacunación antigripal</a></td>
+      <td class="td-source">Diario Epoca</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Salud</span></td>
+      <td class="td-summary">Corrientes inicia vacunación antigripal</td>
+    </tr>
+<tr>
+      <td class="td-date">15/03 00:02</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMiswFBVV95cUxPT2VsU3kyMlVrbXJZX08xbFQ5RW1ZVnZ1UGlDalktR2hBOGtXXzNGSmN4dnI0NEV5NGUyVjQwTDlyS21nMFZUYmk5QklJeVpoazRsY0VheGtia0Joc0xSaS1kTlB3QkQxZzNHVEdwMGRRQ2xEZTJPNDB2SXpDN2JrRTg3R2tFTkJReTJhamUxaHlwUW1wcmwwTDVNZ2MwUUlkalNNWkxzWVVRbDNEMF9YSC1XRQ?oc=5" target="_blank" rel="noopener">Los 90 días: territorialidad, gestión y equilibrio político en la era JP Valdés</a></td>
+      <td class="td-source">Diario Epoca</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#fbbf2420;color:#fbbf24;border:1px solid #fbbf2440">Neutro</span></td>
+      <td class="td-cat"><span class="cat-badge">Politica</span></td>
+      <td class="td-summary">Análisis de 90 días de gobierno</td>
+    </tr>
+<tr>
+      <td class="td-date">14/03 18:40</td>
+      <td class="td-title"><a href="https://www.diarioepoca.com/1375691-mas-de-100-personas-participaron-de-una-jornada-virtual-sobre-transformacion-digital?utm_source=feed&amp;utm_medium=rss&amp;utm_term=rss&amp;utm_campaign=Rss%20Feed" target="_blank" rel="noopener">Más de 100 personas participaron de una jornada virtual sobre transformación digital</a></td>
+      <td class="td-source">Diario Epoca</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Ciencia</span></td>
+      <td class="td-summary">Jornada virtual sobre transformación digital</td>
+    </tr>
+<tr>
+      <td class="td-date">14/03 18:40</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMivAFBVV95cUxPSG9WV0N3MS1xSnhwMVpTeXY1ZExXZkdEalJTbmJSaHcwa080QjJvRUtXMEJqeTgwdndvR2Jsb3V1Rm40QzVzaUwtMkRhZWlLcHNoTmRMUEw1ZUZ0TlVUQ0J0cEJsZ2J5a2JQMWRCUFByajBsV2lhRF9SV1BiWFZ3aEZ0MGs3Uk55dWExWUxjd1F5SnhGTFJFME1iMGkwT19GbW9DY2JvU3lSRjYxZWVGWEtVM25JUXpFS0dDeg?oc=5" target="_blank" rel="noopener">Más de 100 personas participaron de una jornada virtual sobre transformación digital</a></td>
+      <td class="td-source">Diario Epoca</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"></td>
+      <td class="td-summary"><span class="no-data">—</span></td>
+    </tr>
+<tr>
+      <td class="td-date">14/03 17:03</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMi2gFBVV95cUxNNFQ3aHZXYTFDb2YyLVpnSTByam5TT1lDc0FsZTR1NC1OVXc1UXdoV1UtOXVnVnB2bkt3TFB5SFdXVnpPWjdJNlJiYXB6QzY4SEx3RUVRR0lrYkQ2bno5TG9kY1h4SC12WHFiZlNWZEE2dExpc3hhcG1LX2xJQUtvUlNfd3lNMXRwVHpjQVB2V2JSM1FIQUFUVXNLMmh5VjRpS2RTYWQzVzdXRUQ4a0tJdlRBUDUwRUViRFk0MDJDZ1pJeU1VMmhKMVBPcGhaVjZ2M25ZeldyekkxUQ?oc=5" target="_blank" rel="noopener">Salud mental en Corrientes: especialistas debatieron estrategias con la Fundación Pensar</a></td>
+      <td class="td-source">El Litoral</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#fbbf2420;color:#fbbf24;border:1px solid #fbbf2440">Neutro</span></td>
+      <td class="td-cat"></td>
+      <td class="td-summary"><span class="no-data">—</span></td>
+    </tr>
+<tr>
+      <td class="td-date">14/03 14:29</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMiowFBVV95cUxONGEyY1JfVGxSX2hWN3lJNk12cUZCUXBCSVZkTkowa0tWY0Z6b1B4aU5uZElQT2JoQkIzRkw0bDNDeGZRYlVlS29UNW1jZWwtWVF6UVAzRVZZQXIzZExrNEtnLXNWRDdteHpORjVLcGlNOUs4Y1drTVFVaXNadXV3VlZidjlUVEVfQzB1R09PVXNnbmZ2UmRMR0VxMjBRaElIaU5N?oc=5" target="_blank" rel="noopener">Vignolo: “La gestión de Valdés tiene identidad propia”</a></td>
+      <td class="td-source">Cadena de Radios</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"></td>
+      <td class="td-summary"><span class="no-data">—</span></td>
+    </tr>
+<tr>
+      <td class="td-date">14/03 14:00</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMi7AFBVV95cUxPR09uekNuSnN1QzUydmRTeU44c2RsTEF3aEUxM3JEVDkyei1yYnoxYzNnSm5qZGJrRG5WYzRYeVZ5ZUI4eXh4VmM3LXpEN2lKek5CMHBLTGJEb3d1M0JXV1dVRW9oLWpkd3BTQWo3a1Q5R01XSHlmTUhmVldBN1I3SG5vZnZDalRoQVRNWmJtTl9rdVNacXl4VEFNZEN0OUtMXzlqUmxNZU5yTm9RaW41OEJvLXNQS1lnRDZORXNZMUszcGxicmxoYWtEYy1DNHdGaHJPLTVtaXBkZ0l2OGlhZ1Jpby1lOWZNX0FjZdIB8gFBVV95cUxPalhheFJqX1RiTlZOSUVNVVc0X3Z6M1I3TDBEU293dGJaR2RtWFEyX2JzSkZUdzV4bTU0ckNVWFozU0tRcGs0WVYyNzJfblBKZXdGcjc0cS1qaG5qNXU1OE16MWdmaXlHd01oQ0pDV18tTU0wYmlHOHhqTXV1ZDhYZElWcDJ4UWFnVGgxX2JZMzFQbk9oWW05VTd1ZnpuamFSTmpDRnRabWljSVlOZFo2VnR4eDMtbnkyamRIb0FnbWJXbHR2U3Uzb25UQ0pOWTdNYTFRNGl5eU44UEdlQmFNM2VuRF94Q2Rhd1VnX244YTRMZw?oc=5" target="_blank" rel="noopener">Corrientes promociona su pesca deportiva y atractivos turísticos en la feria más grande de Brasil</a></td>
+      <td class="td-source">El Territorio</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#fbbf2420;color:#fbbf24;border:1px solid #fbbf2440">Neutro</span></td>
+      <td class="td-cat"></td>
+      <td class="td-summary"><span class="no-data">—</span></td>
+    </tr>
+<tr>
+      <td class="td-date">14/03 11:01</td>
+      <td class="td-title"><a href="https://www.diarioellibertador.com.ar/impulsan-el-desarrollo-de-nuevos-parques-fotovoltaicos-en-corrientes/" target="_blank" rel="noopener">Impulsan el desarrollo de nuevos parques fotovoltaicos en Corrientes</a></td>
+      <td class="td-source">El Libertador</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Energia</span></td>
+      <td class="td-summary">Avanzan parques solares en Corrientes</td>
+    </tr>
+<tr>
+      <td class="td-date">14/03 10:25</td>
+      <td class="td-title"><a href="https://www.diarioellibertador.com.ar/desbarataron-un-refugio-de-cazadores-y-secuestraron-un-arsenal-de-armas-en-corrientes/" target="_blank" rel="noopener">Desbarataron un refugio de cazadores y secuestraron un arsenal de armas</a></td>
+      <td class="td-source">El Libertador</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Seguridad</span></td>
+      <td class="td-summary">Desbaratan refugio de cazadores</td>
+    </tr>
+<tr>
+      <td class="td-date">14/03 08:31</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMi7gFBVV95cUxPWkFfUV8xaDFDd3VWUGhXQTZ4VmxYcTJVbXFzX05jaHRUVElDaEtqcjRpVmNZVWtyaXZfanozc3hPZXNFN1pqbnk1VWVxZ2RaV0RjMVFwWUdJeG9wMXVtNXhBeU9OVVI0YzJ2MjhiN1dnSk5ZbmhabjN0bGtRbGstSGYzdDBLX1N4elFFUXJIT1J4bDNuNGo0Q25CLWtsandUXzNkT0ZsZ1B3UWs4aXJENnNEZEE2cHBWZFBoZWJZLWNqa0E4TTRISmp2MUJlUG1Ha00tQXo5NnJ2MWEtbV9PSW12N29sbU4waVBvS2ZB?oc=5" target="_blank" rel="noopener">Valdés acompaña a Milei a EE.UU. tras el apoyo de los legisladores correntinos a Nación</a></td>
+      <td class="td-source">MSN</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#fbbf2420;color:#fbbf24;border:1px solid #fbbf2440">Neutro</span></td>
+      <td class="td-cat"><span class="cat-badge">Politica</span></td>
+      <td class="td-summary">Valdés viaja con Milei a EE.UU.</td>
+    </tr>
+<tr>
+      <td class="td-date">14/03 04:54</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMi0gNBVV95cUxOUzJwVUotS0Q2NzJJdDE1SDk4OWszcjluejZNbnBtc3dUVzAyVXludmgzcEpzZl8wQi1OVTRRYVJnZ3B3YnVYNG1KUTYzWjBIa2taZUF4QnR3SWp0YVlNVEQzOG5QRTN3MWxXLUF4S3h3OEh1dTFTOW1MZUdiQVZ0TmVEdlEwQUplTm5FYlA1bHJFQmVMU0o1dzR5dkNxaGhwMDI1blE5Y1NyQk11bWpXU3llQURBd1EzNktoc3p1NzJLQ2tWcUpIbG00REs3UG1TREVFYnpkcDJvNWhEYXlpazg3UjYyZTdrdlpyalZrTHlHNmFYcFk1c1NxQ0ZBT0Q2SWFTMG54UjE5bWFLLTBKYmEyTkdfQnlTNTdjTExkTTFlaWNUenl6YnQwNkRIRXpFNGM4Uk0ydDVYdUFPSURpbXcyME5fZkMzUjZEN0xKcloyOWVMMndSREV3NmJUcjAzaEZ5UlM3THFVaWpTNm9SYmFEbExWdDJKU0xtWXgwblo4Sm5GSnBmZ3NlUkl3VjVFNHFfSUYwZFZraGd1SGJpS290RHJHdkVCaGJxbGlLMFBYdWc5NjlGX1BmZks5aks1ZzNuUDAtNGtnemxXemdINWVn?oc=5" target="_blank" rel="noopener">Argentina Week: el gobernador de Corrientes se reunió con Amazon y se tomó la primera foto con Milei</a></td>
+      <td class="td-source">MSN</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Economia</span></td>
+      <td class="td-summary">Gobernador se reunió con Amazon</td>
+    </tr>
+<tr>
+      <td class="td-date">14/03 01:02</td>
+      <td class="td-title"><a href="https://www.nortecorrientes.com/203330-salud-publica-fortalece-la-red-sanitaria-con-recorridas-y-nuevas-designaciones?utm_source=feed&amp;utm_medium=rss&amp;utm_term=rss&amp;utm_campaign=Rss%20Feed" target="_blank" rel="noopener">Salud Pública fortalece la red sanitaria   con recorridas y nuevas designaciones</a></td>
+      <td class="td-source">Norte Corrientes</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#4ade8020;color:#4ade80;border:1px solid #4ade8040">Positivo</span></td>
+      <td class="td-cat"><span class="cat-badge">Salud</span></td>
+      <td class="td-summary">Fortalecen red sanitaria</td>
+    </tr>
+<tr>
+      <td class="td-date">13/03 23:39</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMiqgFBVV95cUxOQ21YZ3JyLXJTWUd5RnBDTHNVN0FHUE10ZVJVeFRWV3FxU3V2QjBodWxWYVp1ODl3bWFFdDVzcVZCSkE4U0M3ZDRaMWtmS2IycFM4NnA5LVNyUHJFbkxjOGxTc2l1WkxlREREX21CYzRPdFVkczd4N3Robnk2WjRHU0pzODNyWnFrelBoeWp4b0hQY01FRzczZWpGWlh4RjVxN1NEc1JNSFZQdw?oc=5" target="_blank" rel="noopener">La Provincia presentó la Campaña de Vacunación Escolar 2026</a></td>
+      <td class="td-source">Momarandu</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#fbbf2420;color:#fbbf24;border:1px solid #fbbf2440">Neutro</span></td>
+      <td class="td-cat"></td>
+      <td class="td-summary"><span class="no-data">—</span></td>
+    </tr>
+<tr>
+      <td class="td-date">13/03 21:59</td>
+      <td class="td-title"><a href="https://news.google.com/rss/articles/CBMinAFBVV95cUxNWVlVZmNKWXZPRXRkS1BqRHlCaThlOG4xN0FKMjlBLUtjbU90VHQwWWdzOGt3Y2FBU0N1VzBTb05LOVprcDRQaWtWUnowZFhVMFpYejBCT1R2UThNV2Z5a3VPa0tPMnE1S2xPbVYteWE5NWNIZ0psTV82Ui03cEpoNHdxVTBzNDNfVmxlUmhVOENQN0pTdXVMOHlWRHE?oc=5" target="_blank" rel="noopener">MOMARANDU.COM »</a></td>
+      <td class="td-source">Momarandu</td>
+      <td class="td-sentiment"><span class="sentiment-badge" style="background:#fbbf2420;color:#fbbf24;border:1px solid #fbbf2440">Neutro</span></td>
+      <td class="td-cat"></td>
+      <td class="td-summary"><span class="no-data">—</span></td>
+    </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  &Uacute;ltima actualizaci&oacute;n: <span>16/03/2026 11:32</span> &middot; Auto-generado por <strong>Monitor de Medios</strong>
+</div>
+
+</body>
+</html>
