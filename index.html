@@ -124,7 +124,7 @@ tr:hover td{background:rgba(255,255,255,.03)}
 
 <div class="header">
   <h1>Monitor de Medios &mdash; Gobierno de Corrientes</h1>
-  <div class="sub">Reporte generado el 16/03/2026 11:48 &middot; Datos de los &uacute;ltimos 7 d&iacute;as</div>
+  <div class="sub">Reporte generado el 16/03/2026 11:49 &middot; Datos de los &uacute;ltimos 7 d&iacute;as</div>
 </div>
 
 <div class="container">
@@ -610,15 +610,14 @@ tr:hover td{background:rgba(255,255,255,.03)}
 </div>
 
 <div class="footer">
-  &Uacute;ltima actualizaci&oacute;n: <span>16/03/2026 11:48</span> &middot; Auto-generado por <strong>Monitor de Medios</strong>
+  &Uacute;ltima actualizaci&oacute;n: <span>16/03/2026 11:49</span> &middot; Auto-generado por <strong>Monitor de Medios</strong>
 </div>
 
 </div><!-- fin dashboard-content -->
 
 <script>
 (function(){
-  // Hash simple de la contraseña (SHA-256 de "monitor2026")
-  var HASH = '5f2b7d5e8c0a9b3d1e4f6a7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7';
+  var HASH = '04854bf4dd65c43a7c86d29434f44eb1485d840995827470f6300a04919d20a3';
 
   async function sha256(str) {
     var buf = new TextEncoder().encode(str);
@@ -626,19 +625,25 @@ tr:hover td{background:rgba(255,255,255,.03)}
     return Array.from(new Uint8Array(hash)).map(function(b){return b.toString(16).padStart(2,'0')}).join('');
   }
 
-  // Check session
+  // Check session (expira en 7 días)
   var stored = localStorage.getItem('mm_auth');
-  if (stored === HASH) {
+  var storedTime = parseInt(localStorage.getItem('mm_auth_time') || '0');
+  var sevenDays = 7 * 24 * 60 * 60 * 1000;
+  if (stored === HASH && (Date.now() - storedTime) < sevenDays) {
     document.getElementById('login-overlay').classList.add('hidden');
     document.getElementById('dashboard-content').style.display = 'block';
+  } else {
+    localStorage.removeItem('mm_auth');
+    localStorage.removeItem('mm_auth_time');
   }
 
   document.getElementById('login-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     var pass = document.getElementById('login-pass').value;
     var h = await sha256(pass);
-    if (pass === 'monitor2026') {
+    if (h === HASH) {
       localStorage.setItem('mm_auth', HASH);
+      localStorage.setItem('mm_auth_time', Date.now().toString());
       document.getElementById('login-overlay').classList.add('hidden');
       document.getElementById('dashboard-content').style.display = 'block';
     } else {
