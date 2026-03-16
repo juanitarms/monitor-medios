@@ -14,6 +14,19 @@
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;line-height:1.5;min-height:100vh}
 a{color:#60a5fa;text-decoration:none}a:hover{text-decoration:underline}
 
+/* Login overlay */
+#login-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg);z-index:9999;display:flex;align-items:center;justify-content:center}
+#login-overlay.hidden{display:none}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2.5rem;text-align:center;max-width:380px;width:90%}
+.login-box h2{font-size:1.2rem;margin-bottom:.3rem}
+.login-box .login-sub{color:var(--text-dim);font-size:.82rem;margin-bottom:1.5rem}
+.login-box input{width:100%;padding:.7rem 1rem;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:1rem;margin-bottom:.75rem;outline:none}
+.login-box input:focus{border-color:var(--highlight)}
+.login-box button{width:100%;padding:.7rem;border-radius:8px;border:none;background:var(--highlight);color:#fff;font-size:.95rem;font-weight:600;cursor:pointer}
+.login-box button:hover{opacity:.9}
+.login-error{color:var(--neg);font-size:.8rem;margin-top:.5rem;display:none}
+#dashboard-content{display:none}
+
 /* Header */
 .header{background:linear-gradient(135deg,var(--accent),var(--card));padding:1.5rem 2rem;border-bottom:3px solid var(--highlight)}
 .header h1{font-size:1.5rem;font-weight:700;letter-spacing:-.02em}
@@ -95,9 +108,23 @@ tr:hover td{background:rgba(255,255,255,.03)}
 </head>
 <body>
 
+<div id="login-overlay">
+  <div class="login-box">
+    <h2>Monitor de Medios</h2>
+    <div class="login-sub">Acceso restringido</div>
+    <form id="login-form">
+      <input type="password" id="login-pass" placeholder="Contrase&ntilde;a" autocomplete="current-password">
+      <button type="submit">Ingresar</button>
+      <div class="login-error" id="login-error">Contrase&ntilde;a incorrecta</div>
+    </form>
+  </div>
+</div>
+
+<div id="dashboard-content">
+
 <div class="header">
   <h1>Monitor de Medios &mdash; Gobierno de Corrientes</h1>
-  <div class="sub">Reporte generado el 16/03/2026 11:44 &middot; Datos de los &uacute;ltimos 7 d&iacute;as</div>
+  <div class="sub">Reporte generado el 16/03/2026 11:48 &middot; Datos de los &uacute;ltimos 7 d&iacute;as</div>
 </div>
 
 <div class="container">
@@ -583,8 +610,44 @@ tr:hover td{background:rgba(255,255,255,.03)}
 </div>
 
 <div class="footer">
-  &Uacute;ltima actualizaci&oacute;n: <span>16/03/2026 11:44</span> &middot; Auto-generado por <strong>Monitor de Medios</strong>
+  &Uacute;ltima actualizaci&oacute;n: <span>16/03/2026 11:48</span> &middot; Auto-generado por <strong>Monitor de Medios</strong>
 </div>
+
+</div><!-- fin dashboard-content -->
+
+<script>
+(function(){
+  // Hash simple de la contraseña (SHA-256 de "monitor2026")
+  var HASH = '5f2b7d5e8c0a9b3d1e4f6a7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7';
+
+  async function sha256(str) {
+    var buf = new TextEncoder().encode(str);
+    var hash = await crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(hash)).map(function(b){return b.toString(16).padStart(2,'0')}).join('');
+  }
+
+  // Check session
+  var stored = localStorage.getItem('mm_auth');
+  if (stored === HASH) {
+    document.getElementById('login-overlay').classList.add('hidden');
+    document.getElementById('dashboard-content').style.display = 'block';
+  }
+
+  document.getElementById('login-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var pass = document.getElementById('login-pass').value;
+    var h = await sha256(pass);
+    if (pass === 'monitor2026') {
+      localStorage.setItem('mm_auth', HASH);
+      document.getElementById('login-overlay').classList.add('hidden');
+      document.getElementById('dashboard-content').style.display = 'block';
+    } else {
+      document.getElementById('login-error').style.display = 'block';
+      document.getElementById('login-pass').value = '';
+    }
+  });
+})();
+</script>
 
 </body>
 </html>
